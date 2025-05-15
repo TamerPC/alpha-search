@@ -1,8 +1,9 @@
-import numpy as np
-from Game import Game
 from __future__ import print_function
 import sys
 sys.path.append('..')
+
+import numpy as np
+from Game import Game
 from searchgamelogic import SearchGameLogic
 
 class SearchGame(Game):

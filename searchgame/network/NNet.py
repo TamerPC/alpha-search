@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 import numpy as np
 from NeuralNet import NeuralNet
 from searchgameNNet import SearchGameNNet
@@ -7,8 +9,6 @@ import shutil
 import time
 import random
 import math
-import sys
-sys.path.append('..')
 from utils import *
 from NeuralNet import NeuralNet
 
