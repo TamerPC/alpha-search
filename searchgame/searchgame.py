@@ -3,7 +3,7 @@ import sys
 sys.path.append('..')
 import numpy as np
 from Game import Game
-from searchgamelogic import SearchGameLogic
+from searchgame.searchgamelogic import SearchGameLogic
 
 class SearchGame(Game):
     def __init__(self, args):
