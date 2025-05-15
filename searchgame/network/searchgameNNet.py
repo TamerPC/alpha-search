@@ -1,3 +1,11 @@
+import sys
+sys.path.append('..')
+from utils import *
+
+import argparse
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
 import numpy as np
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Activation, BatchNormalization
