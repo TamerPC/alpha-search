@@ -11,14 +11,14 @@ class SearchGame(Game):
         self.args = args
         self.obs_dim = 12 + 5 + 100
 
+
     def getInitBoard(self):
-        array = np.random.randint(1, 100, size=self.args.size)
+        arr = np.random.randint(1,101,size=self.args.size)
         if self.args.sorted:
-            array.sort()
-        target = np.random.choice(array)
-        self.logic = SearchGameLogic(array, target)
-        obs = self.logic.reset()
-        return obs
+            arr.sort()
+        tgt = int(np.random.choice(arr))
+        self.logic = SearchGameLogic(arr,tgt)
+        return self.logic.reset()
 
     def getBoardSize(self):
         return (self.obs_dim,)
