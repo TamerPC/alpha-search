@@ -108,56 +108,69 @@ class SearchGameLogic:
 
     def get_obs(self):
         """
-        Векторизуем состояние:
-        [array..., target, cur, vars[5], mask_allowed...]
-        mask_allowed — длина = 100 + len(cmds).
+        Формат:
+         [ array[0..M-1],
+           target,
+           cur,
+           vars[0..4],
+           mask_allowed[0..A-1],
+           done_flag,    # 1 или 0
+           found_flag,   # 1 или 0
+           cmp_count ]   # целое число (можно нормировать, но достаточно raw)
         """
         obs = []
-        # сам массив и таргет
+        # массив и target
         obs.extend(self.array)
         obs.append(self.target)
-        # указатель и 5 переменных
+        # cur и vars
         obs.append(self.cur)
         obs.extend(self.vars)
-        # маска доступных ходов
+        # маска действий
         total_actions = 100 + len(self.cmds)
-        mask = [0] * total_actions
-        for action in self.allowed:
-            if isinstance(action, int) and 1 <= action <= 100:
-                mask[action - 1] = 1
-            elif action in self.cmds:
-                idx = 100 + self.cmds.index(action)
-                mask[idx] = 1
+        mask = [0]*total_actions
+        for a in self.allowed:
+            if isinstance(a, int):
+                mask[a-1] = 1
+            else:
+                mask[100 + self.cmds.index(a)] = 1
         obs.extend(mask)
+        # НОВОЕ: флаги и счётчик
+        obs.append(1 if self.done else 0)
+        obs.append(1 if self.found else 0)
+        obs.append(self.cmp_count)
         return np.array(obs, dtype=np.float32)
 
     @classmethod
     def from_obs(cls, obs):
-        """
-        Восстанавливаем логику из вектора obs.
-        Формат obs: [array..., target, cur, vars5, mask_allowed...]
-        """
-        n = len(obs)
-        # Длина массива = (n - 1 таргет -1 cur -5 vars - mask)/?
-        # Предположим, вы заранее фиксируете длину массива M и mask_len = 100+len(cmds)
         M = cls._array_length
-        mask_len = 100 + len(cls.cmds)
-
-        array = obs[:M].astype(int).tolist()
+        action_size = 100 + len(cls.cmds)
+        # нарезаем по частям
+        array = obs[0:M].astype(int).tolist()
         target = int(obs[M])
-        cur = int(obs[M + 1])
-        vars = list(obs[M + 2:M + 7].astype(int))
-        allowed_mask = obs[-mask_len:].astype(int).tolist()
+        cur = int(obs[M+1])
+        vars_ = obs[M+2:M+7].astype(int).tolist()
+        mask = obs[M+7:M+7+action_size].astype(int).tolist()
+        # читаем флаги
+        done_flag  = bool(obs[M+7+action_size])
+        found_flag = bool(obs[M+8+action_size])
+        cmp_count  = int(obs[M+9+action_size])
 
-        # строим множесто allowed
+        # строим allowed
         allowed = set()
-        for i, bit in enumerate(allowed_mask):
+        for idx, bit in enumerate(mask):
             if bit:
-                if i < 100:
-                    allowed.add(i + 1)
+                if idx < 100:
+                    allowed.add(idx+1)
                 else:
-                    allowed.add(cls.cmds[i - 100])
+                    allowed.add(cls.cmds[idx-100])
 
-        return cls(array=array, target=target,
-                   cur=cur, vars=vars, allowed=allowed,
-                   done=False, found=False, cmp_count=0)
+        return cls(
+            array=array,
+            target=target,
+            cur=cur,
+            vars=vars_,
+            allowed=allowed,
+            done=done_flag,
+            found=found_flag,
+            cmp_count=cmp_count
+        )

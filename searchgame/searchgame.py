@@ -42,8 +42,12 @@ class SearchGame(Game):
         return np.array(vec)
 
     def getGameEnded(self, board, player):
+        from searchgame.searchgamelogic import SearchGameLogic
         logic = SearchGameLogic.from_obs(board)
-        return 1 if logic.done and logic.found else 0
+        # возвращаем +1 если нашли, -1 если закончили без нахождения, 0 иначе
+        if logic.done:
+            return 1 if logic.found else -1
+        return 0
 
     def getCanonicalForm(self, board, player):
         return board
