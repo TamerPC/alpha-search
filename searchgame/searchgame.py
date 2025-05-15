@@ -24,7 +24,13 @@ class SearchGame(Game):
         return (self.obs_dim,)
 
     def getActionSize(self):
-        return 100 + 11  # 1–100 чисел + 11 строковых команд
+        """
+        Возвращает общее число возможных действий (числовые + строковые команды).
+        """
+        # Список строковых команд (длина определяет количество)
+        cmds = ['cmp','set','add','sub','mul','div',
+                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        return 100 + len(cmds)
 
     def getNextState(self, board, player, action):
         obs, reward, done = self.logic.step(action)
