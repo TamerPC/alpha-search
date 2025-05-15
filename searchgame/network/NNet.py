@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import numpy as np
 from NeuralNet import NeuralNet
-from searchgameNNet import SearchGameNNet
+from searchgame.searchgameNNet import SearchGameNNet
 import argparse
 import os
 import shutil
