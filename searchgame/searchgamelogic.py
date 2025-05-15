@@ -86,18 +86,19 @@ class SearchGameLogic:
         return obs, reward, self.done
 
     def get_obs(self):
-        # вектор: [cur, array[cur], target] + vars + one-hot mask(allowed)
-        one_hot = np.zeros(12 + 5 + 100, dtype=np.int8)
-        one_hot[0] = self.cur
-        one_hot[1] = self.array[self.cur]
-        one_hot[2] = self.target
-        for i, v in enumerate(self.vars): one_hot[3 + i] = v
-        # маска команд
-        for cmd in self.allowed:
-            if isinstance(cmd, str):
-                # хэшим строку в индекс 8..? (упрощённо)
-                pass
-        return one_hot
+        # Вектор состояния: [cur] + array + [target] + vars(5) + mask
+        obs = []
+        obs.append(self.cur)
+        obs.extend(self.array)
+        obs.append(self.target)
+        obs.extend(self.vars)
+        # маска допустимых ходов
+        mask = [0] * self.get_action_size()
+        from searchgame import SearchGame
+        for a in self.allowed:
+            mask[SearchGame._action_to_index(a)] = 1
+        obs.extend(mask)
+        return np.array(obs, dtype=np.int32)
 
     def compute_reward(self):
         # 0: не найдено, +1: найдено, +bonus за эффективность
@@ -114,3 +115,19 @@ class SearchGameLogic:
         if cmp_count <= binary:
             bonus += 1
         return bonus
+    
+    @staticmethod
+    def from_obs(obs, size):
+        # size = длина массива
+        cur = int(obs[0])
+        array = list(obs[1:1+size])
+        target = int(obs[1+size])
+        vars = list(obs[2+size:2+size+5])
+        logic = SearchGameLogic(array, target, cur=cur, vars=vars)
+        return logic
+
+    @staticmethod
+    def get_action_size():
+        cmds = ['cmp','set','add','sub','mul','div',
+                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        return 100 + len(cmds)

@@ -1,52 +1,45 @@
 from __future__ import print_function
 import sys
 sys.path.append('..')
-
 import numpy as np
 from Game import Game
-from searchgame.searchgamelogic import SearchGameLogic
+from searchgamelogic import SearchGameLogic
 
 class SearchGame(Game):
     def __init__(self, args):
         self.args = args
-        self.obs_dim = 12 + 5 + 100
-
+        self.size = args.size
+        self.obs_dim = 1 + self.size + 1 + 5 + self.getActionSize()
 
     def getInitBoard(self):
-        arr = np.random.randint(1,101,size=self.args.size)
+        arr = np.random.randint(1, 101, size=self.size)
         if self.args.sorted:
             arr.sort()
         tgt = int(np.random.choice(arr))
-        self.logic = SearchGameLogic(arr,tgt)
-        return self.logic.reset()
+        return SearchGameLogic(arr, tgt).get_obs()
 
     def getBoardSize(self):
         return (self.obs_dim,)
 
     def getActionSize(self):
-        """
-        Возвращает общее число возможных действий (числовые + строковые команды).
-        """
-        cmds = ['cmp','set','add','sub','mul','div',
-                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
-        return 100 + len(cmds)
+        return SearchGameLogic.get_action_size()
 
     def getNextState(self, board, player, actionIndex):
-        # Преобразуем индекс действия в саму команду
+        logic = SearchGameLogic.from_obs(board, self.size)
         action = self._index_to_action(actionIndex)
-        obs, reward, done = self.logic.step(action)
-        # В однопользовательской игре игрок не меняется
-        return obs, player
+        obs, reward, done = logic.step(action)
+        return obs, player  # одномерная игра
 
     def getValidMoves(self, board, player):
+        logic = SearchGameLogic.from_obs(board, self.size)
         mask = np.zeros(self.getActionSize(), dtype=np.int8)
-        for a in self.logic.allowed:
-            idx = self._action_to_index(a)
-            mask[idx] = 1
+        for a in logic.allowed:
+            mask[self._action_to_index(a)] = 1
         return mask
 
     def getGameEnded(self, board, player):
-        return 1 if (self.logic.done and self.logic.found) else -1 if self.logic.done else 0
+        logic = SearchGameLogic.from_obs(board, self.size)
+        return 1 if (logic.done and logic.found) else -1 if logic.done else 0
 
     def getCanonicalForm(self, board, player):
         return board
@@ -57,20 +50,16 @@ class SearchGame(Game):
     def stringRepresentation(self, board):
         return board.tobytes()
 
-    def _action_to_index(self, action):
-        # маппинг action->индекс в векторе
-        if isinstance(action, int): return action-1
-        cmd_list = ['cmp','set','add','sub','mul','div',
-                    'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
-        return 100 + cmd_list.index(action)
-    
+    @staticmethod
+    def _action_to_index(action):
+        if isinstance(action, int):
+            return action - 1
+        cmds = ['cmp','set','add','sub','mul','div',
+                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        return 100 + cmds.index(action)
+
     @staticmethod
     def _index_to_action(index):
-        """
-        Обратное преобразование индекса в действие.
-        Для индексов 0-99 возвращает число (1-100),
-        для остальных — строковую команду.
-        """
         if index < 100:
             return index + 1
         cmds = ['cmp','set','add','sub','mul','div',
