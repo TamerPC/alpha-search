@@ -27,14 +27,16 @@ class SearchGame(Game):
         """
         Возвращает общее число возможных действий (числовые + строковые команды).
         """
-        # Список строковых команд (длина определяет количество)
         cmds = ['cmp','set','add','sub','mul','div',
                 'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
         return 100 + len(cmds)
 
-    def getNextState(self, board, player, action):
+    def getNextState(self, board, player, actionIndex):
+        # Преобразуем индекс действия в саму команду
+        action = self._index_to_action(actionIndex)
         obs, reward, done = self.logic.step(action)
-        return obs, done
+        # В однопользовательской игре игрок не меняется
+        return obs, player
 
     def getValidMoves(self, board, player):
         mask = np.zeros(self.getActionSize(), dtype=np.int8)
