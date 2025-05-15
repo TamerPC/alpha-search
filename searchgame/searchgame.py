@@ -8,6 +8,7 @@ from searchgame.searchgamelogic import SearchGameLogic
 class SearchGame(Game):
     def __init__(self, args):
         # args.size — длина вашего массива (например, 30)
+        self.args = args
         self.size = args.size
         # всего действий = 100 числовых + len(cmds)
         self.action_size = SearchGameLogic.get_action_size()
@@ -31,10 +32,13 @@ class SearchGame(Game):
         )
 
     def getInitBoard(self):
-        arr = np.random.randint(1, 101, size=self.size)
+        arr = list(range(1, self.size+1))
+        tgt = np.random.randint(1, self.size+1)
         if self.args.sorted:
             arr.sort()
-        tgt = int(np.random.choice(arr))
+        else:
+            np.random.shuffle(arr)
+        # сразу возвращаем вектор состояния
         return SearchGameLogic(arr, tgt).get_obs()
 
     def getBoardSize(self):
