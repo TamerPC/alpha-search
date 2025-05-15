@@ -1,56 +1,53 @@
 import numpy as np
+from Game import Game
+from searchgamelogic import SearchGameLogic
 
-class SearchGame:
-    def __init__(self, n=10):
-        self.n = n
-        self.action_size = 3
+class SearchGame(Game):
+    def __init__(self, args):
+        self.args = args
+        self.obs_dim = 12 + 5 + 100
 
     def getInitBoard(self):
-        self.array = np.random.randint(0, 100, self.n)
-        self.target = np.random.choice(self.array)
-        self.current_index = 0
-        self.done = False
-        return self.getBoard()
+        array = np.random.randint(1, 100, size=self.args.size)
+        if self.args.sorted:
+            array.sort()
+        target = np.random.choice(array)
+        self.logic = SearchGameLogic(array, target)
+        obs = self.logic.reset()
+        return obs
 
     def getBoardSize(self):
-        return (self.n,)
+        return (self.obs_dim,)
 
     def getActionSize(self):
-        return self.action_size
+        return 100 + 11  # 1–100 чисел + 11 строковых команд
 
     def getNextState(self, board, player, action):
-        if self.done:
-            return board, player
-
-        if action == 0:
-            self.current_index = min(self.current_index + 1, self.n - 1)
-        elif action == 1:
-            if self.array[self.current_index] == self.target:
-                self.done = True
-        elif action == 2:
-            self.done = True
-
-        return self.getBoard(), player
+        obs, reward, done = self.logic.step(action)
+        return obs, done
 
     def getValidMoves(self, board, player):
-        valids = [0] * self.getActionSize()
-        if not self.done:
-            valids = [1] * self.getActionSize()
-        return np.array(valids)
+        mask = np.zeros(self.getActionSize(), dtype=np.int8)
+        for a in self.logic.allowed:
+            idx = self._action_to_index(a)
+            mask[idx] = 1
+        return mask
 
     def getGameEnded(self, board, player):
-        if self.done:
-            if self.array[self.current_index] == self.target:
-                return 1
-            else:
-                return -1
-        return 0
+        return 1 if (self.logic.done and self.logic.found) else -1 if self.logic.done else 0
 
     def getCanonicalForm(self, board, player):
         return board
 
-    def stringRepresentation(self, board):
-        return str(board)
+    def getSymmetries(self, board, pi):
+        return [(board, pi)]
 
-    def getBoard(self):
-        return np.array([self.array, [self.target]*self.n, [self.current_index]*self.n])
+    def stringRepresentation(self, board):
+        return board.tobytes()
+
+    def _action_to_index(self, action):
+        # маппинг action->индекс в векторе
+        if isinstance(action, int): return action-1
+        cmd_list = ['cmp','set','add','sub','mul','div',
+                    'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        return 100 + cmd_list.index(action)
