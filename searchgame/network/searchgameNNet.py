@@ -21,5 +21,5 @@ class SearchGameNNet:
         pi = Dense(self.action_size, activation='softmax', name='pi')(x)
         v  = Dense(1, activation='tanh',       name='v')(x)
         self.model = Model(inputs=s, outputs=[pi, v])
-        self.model.compile(optimizer=args.lr,
+        self.model.compile(optimizer=Adam(learning_rate=args.lr),
                            loss={'pi': 'categorical_crossentropy', 'v': 'mean_squared_error'})
