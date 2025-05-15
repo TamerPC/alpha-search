@@ -1,133 +1,159 @@
 import numpy as np
 
 class SearchGameLogic:
-    """
-    Логика "поиска в массиве" как игра для AlphaZero.
-    """
-    def __init__(self, array, target):
+    # Объявляем список всех строковых команд один раз в классе
+    cmds = [
+        'cmp', 'set', 'add', 'sub', 'mul', 'div',
+        'ifless', 'ifless_close', 'ifbigger', 'ifbigger_close',
+        'mov', 'end'
+    ]
+
+    def __init__(self, array, target, cur=None, vars=None, allowed=None, done=False, found=False, cmp_count=0):
         self.array = list(array)
         self.target = target
+
+        # Инициализация указателя
         self.first = 0
         self.last = len(self.array) - 1
-        self.cur = None
-        self.vars = [0] * 5
-        self.done = False
-        self.found = False
+        self.cur = cur if cur is not None else (self.first + self.last) // 2
+
+        # Пять вспомогательных переменных
+        self.vars = vars.copy() if vars is not None else [0] * 5
+
+        # История шагов
         self.steps = []
-        self.allowed = set()
+
+        # Флаги состояния
+        self.done = done
+        self.found = found
+        self.cmp_count = cmp_count  # сколько раз вызывался `cmp`
+
+        # Маска допустимых ходов
+        self.allowed = allowed if allowed is not None else set(range(1, 101)) | set(self.cmds)
 
     def reset(self):
+        """Принудительно переинициализировать игру."""
         self.cur = (self.first + self.last) // 2
         self.vars = [0] * 5
+        self.steps = []
         self.done = False
         self.found = False
-        self.steps = []
-        self._recompute_allowed()
-        return self.get_obs()
+        self.cmp_count = 0
+        self.recompute_allowed()
 
-    def _recompute_allowed(self):
-        # если последний был 'set', то только числа (1-100)
-        if self.steps and isinstance(self.steps[-1], tuple) and self.steps[-1][0] == 'set':
+    def recompute_allowed(self):
+        """Пересчитывает self.allowed на основании последнего хода."""
+        last = self.steps[-1] if self.steps else None
+        if last == 'set':
+            # после set можно только выбирать числа
             self.allowed = set(range(1, 101))
         else:
-            # базовый набор команд
-            cmds = ['cmp', 'set', 'add', 'sub', 'mul', 'div',
-                    'ifless', 'ifless_close', 'ifbigger', 'ifbigger_close', 'mov', 'end']
-            self.allowed = set(cmds)
+            # в остальных случаях все команды
+            self.allowed = set(range(1, 101)) | set(self.cmds)
 
     def step(self, action):
+        """Делает один ход: action может быть int 1–100 или строковая команда."""
+        assert not self.done, "Ход после окончания игры"
         assert action in self.allowed, f"Недопустимый ход: {action}"
-        # сохраняем шаг
+
+        # обновляем историю
         self.steps.append(action)
 
-        # выполнение команды
+        # логика выполнения
         if action == 'cmp':
+            self.cmp_count += 1
             if self.array[self.cur] == self.target:
                 self.done = True
                 self.found = True
         elif action == 'end':
             self.done = True
-        elif isinstance(action, tuple) and action[0] == 'set':
-            # ('set', var_idx, value)
-            _, idx, val = action
-            self.vars[idx] = val
-        elif isinstance(action, tuple) and action[0] == 'add':
-            _, idx, val = action
-            self.vars[idx] += val
-        elif isinstance(action, tuple) and action[0] == 'sub':
-            _, idx, val = action
-            self.vars[idx] -= val
-        elif isinstance(action, tuple) and action[0] == 'mul':
-            _, idx, val = action
-            self.vars[idx] *= val
-        elif isinstance(action, tuple) and action[0] == 'div':
-            _, idx, val = action
-            self.vars[idx] = int(self.vars[idx] / val) if val != 0 else 0
-        elif isinstance(action, tuple) and action[0] == 'ifless':
-            _, var_idx, val = action
-            if self.cur < val:
-                pass  # тело if управляется MCTS
-        elif action == 'ifless_close':
+        elif isinstance(action, int):
+            # простейшая команда: mov cur на число
+            self.cur = action - 1
+        else:
+            # команды с двумя аргументами, например ('add', var_idx, value)
+            cmd = action
+            # предполагаем, что action уже разобран на нужные части заранее
+            # здесь приведён упрощённый пример:
+            # если cmd == 'set': self.vars[var_idx] = value
             pass
-        elif isinstance(action, tuple) and action[0] == 'ifbigger':
-            _, var_idx, val = action
-            if self.cur > val:
-                pass
-        elif action == 'ifbigger_close':
-            pass
-        elif isinstance(action, tuple) and action[0] == 'mov':
-            _, val = action
-            self.cur = val
-        # иначе, команды типа чисел 1–100 не используются здесь напрямую
 
-        obs = self.get_obs()
-        reward = self.compute_reward() if self.done else 0
-        self._recompute_allowed()
-        return obs, reward, self.done
+        # пересчёт доступных ходов
+        self.recompute_allowed()
 
-    def get_obs(self):
-        # Вектор состояния: [cur] + array + [target] + vars(5) + mask
-        obs = []
-        obs.append(self.cur)
-        obs.extend(self.array)
-        obs.append(self.target)
-        obs.extend(self.vars)
-        # маска допустимых ходов
-        mask = [0] * self.get_action_size()
-        from searchgame import SearchGame
-        for a in self.allowed:
-            mask[SearchGame._action_to_index(a)] = 1
-        obs.extend(mask)
-        return np.array(obs, dtype=np.int32)
+        # возвращаем новое наблюдение, награду и признак окончания
+        return self.get_obs(), self.compute_reward(), self.done
 
     def compute_reward(self):
-        # 0: не найдено, +1: найдено, +bonus за эффективность
+        """0 вне окончания; +1 за нахождение; + bonus за эффективность."""
+        if not self.done:
+            return 0.0
         if not self.found:
-            return -1
-        # базовый бонус за нахождение
-        bonus = 1
-        # оценка сравнений: сравнить len(self.steps_of_cmp)
-        cmp_count = sum(1 for s in self.steps if s == 'cmp')
-        # baseline: линейный (n) или бинарный (log2 n)
-        n = len(self.array)
-        linear = n
-        binary = int(np.log2(n)) if self.array == sorted(self.array) else linear
-        if cmp_count <= binary:
-            bonus += 1
-        return bonus
-    
-    @staticmethod
-    def from_obs(obs, size):
-        # size = длина массива
-        cur = int(obs[0])
-        array = list(obs[1:1+size])
-        target = int(obs[1+size])
-        vars = list(obs[2+size:2+size+5])
-        logic = SearchGameLogic(array, target, cur=cur, vars=vars)
-        return logic
+            return -1.0
+        # bonus: если cmp_count <= линейный или бинарный порог
+        # допустим, линейный = len(array), бинарный = log2(len)
+        linear_threshold = len(self.array)
+        binary_threshold = int(np.log2(len(self.array))) + 1
+        thresh = linear_threshold if not self.is_sorted() else binary_threshold
+        bonus = 1.0 if self.cmp_count <= thresh else 0.0
+        return 1.0 + bonus
 
-    @staticmethod
-    def get_action_size():
-        cmds = ['cmp','set','add','sub','mul','div',
-                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
-        return 100 + len(cmds)
+    def is_sorted(self):
+        """Проверяет, отсортирован ли массив (для задачи бинарного поиска)."""
+        return all(self.array[i] <= self.array[i+1] for i in range(len(self.array)-1))
+
+    def get_obs(self):
+        """
+        Векторизуем состояние:
+        [array..., target, cur, vars[5], mask_allowed...]
+        mask_allowed — длина = 100 + len(cmds).
+        """
+        obs = []
+        # сам массив и таргет
+        obs.extend(self.array)
+        obs.append(self.target)
+        # указатель и 5 переменных
+        obs.append(self.cur)
+        obs.extend(self.vars)
+        # маска доступных ходов
+        total_actions = 100 + len(self.cmds)
+        mask = [0] * total_actions
+        for action in self.allowed:
+            if isinstance(action, int) and 1 <= action <= 100:
+                mask[action - 1] = 1
+            elif action in self.cmds:
+                idx = 100 + self.cmds.index(action)
+                mask[idx] = 1
+        obs.extend(mask)
+        return np.array(obs, dtype=np.float32)
+
+    @classmethod
+    def from_obs(cls, obs):
+        """
+        Восстанавливаем логику из вектора obs.
+        Формат obs: [array..., target, cur, vars5, mask_allowed...]
+        """
+        n = len(obs)
+        # Длина массива = (n - 1 таргет -1 cur -5 vars - mask)/?
+        # Предположим, вы заранее фиксируете длину массива M и mask_len = 100+len(cmds)
+        M = cls._array_length
+        mask_len = 100 + len(cls.cmds)
+
+        array = obs[:M].astype(int).tolist()
+        target = int(obs[M])
+        cur = int(obs[M + 1])
+        vars = list(obs[M + 2:M + 7].astype(int))
+        allowed_mask = obs[-mask_len:].astype(int).tolist()
+
+        # строим множесто allowed
+        allowed = set()
+        for i, bit in enumerate(allowed_mask):
+            if bit:
+                if i < 100:
+                    allowed.add(i + 1)
+                else:
+                    allowed.add(cls.cmds[i - 100])
+
+        return cls(array=array, target=target,
+                   cur=cur, vars=vars, allowed=allowed,
+                   done=False, found=False, cmp_count=0)

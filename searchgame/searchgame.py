@@ -25,21 +25,25 @@ class SearchGame(Game):
         return SearchGameLogic.get_action_size()
 
     def getNextState(self, board, player, actionIndex):
-        logic = SearchGameLogic.from_obs(board, self.size)
+        logic = SearchGameLogic.from_obs(board)
         action = self._index_to_action(actionIndex)
-        obs, reward, done = logic.step(action)
-        return obs, player  # одномерная игра
+        obs2, reward, done = logic.step(action)
+        # reward и done теперь учитываются в MCTS/Coach
+        return obs2, player
 
     def getValidMoves(self, board, player):
-        logic = SearchGameLogic.from_obs(board, self.size)
-        mask = np.zeros(self.getActionSize(), dtype=np.int8)
-        for a in logic.allowed:
-            mask[self._action_to_index(a)] = 1
-        return mask
+        logic = SearchGameLogic.from_obs(board)
+        mask = logic.allowed
+        # конвертируем mask в вектор 0/1
+        vec = [0] * self.getActionSize()
+        for a in mask:
+            idx = self._action_to_index(a)
+            vec[idx] = 1
+        return np.array(vec)
 
     def getGameEnded(self, board, player):
-        logic = SearchGameLogic.from_obs(board, self.size)
-        return 1 if (logic.done and logic.found) else -1 if logic.done else 0
+        logic = SearchGameLogic.from_obs(board)
+        return 1 if logic.done and logic.found else 0
 
     def getCanonicalForm(self, board, player):
         return board

@@ -9,6 +9,10 @@ from Coach import Coach
 from searchgame.searchgame import SearchGame as Game
 from utils import dotdict
 
+from searchgame.searchgamelogic import SearchGameLogic
+
+SearchGameLogic._array_length = 30
+
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
 
