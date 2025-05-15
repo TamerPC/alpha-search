@@ -5,13 +5,15 @@ from searchgame.network.NNet import NNetWrapper as nn
 import logging
 import coloredlogs
 
+from searchgame.searchgamelogic import SearchGameLogic
+
+
 from Coach import Coach
 from searchgame.searchgame import SearchGame as Game
 from utils import dotdict
 
 from searchgame.searchgamelogic import SearchGameLogic
 
-SearchGameLogic._array_length = 30
 
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
@@ -36,6 +38,8 @@ args = dotdict({
     'load_folder_file': ('./checkpoint','best.pth.tar'),
     'numItersForTrainExamplesHistory': 20,
 })
+
+SearchGameLogic._array_length = args.size
 
 def main():
     log.info('Loading %s...', Game.__name__)

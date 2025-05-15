@@ -31,6 +31,10 @@ class SearchGameLogic:
         # Маска допустимых ходов
         self.allowed = allowed if allowed is not None else set(range(1, 101)) | set(self.cmds)
 
+    @classmethod
+    def get_action_size(cls):
+        return 100 + len(cls.cmds)
+
     def reset(self):
         """Принудительно переинициализировать игру."""
         self.cur = (self.first + self.last) // 2
