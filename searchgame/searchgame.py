@@ -65,6 +65,7 @@ class SearchGame(Game):
     def getGameEnded(self, board, player):
         logic = SearchGameLogic.from_obs(board)
         # возвращаем +1 если нашли, -1 если закончили без нахождения, 0 иначе
+        print(">>> get game ended:", logic.done, logic.found)
         if logic.done:
             return 1 if logic.found else -1
         return 0

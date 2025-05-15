@@ -150,7 +150,7 @@ class SearchGameLogic:
         array = obs[0:M].astype(int).tolist()
         target = int(obs[M])
         cur = int(obs[M+1])
-        vars_ = obs[M+2:M+7].astype(int).tolist()
+        vars_lst = obs[M+2:M+7].astype(int).tolist()
         mask = obs[M+7:M+7+action_size].astype(int).tolist()
         # читаем флаги
         done_flag  = bool(obs[M+7+action_size])
@@ -170,7 +170,7 @@ class SearchGameLogic:
             array=array,
             target=target,
             cur=cur,
-            vars=vars_,
+            vars=vars_lst,
             allowed=allowed,
             done=done_flag,
             found=found_flag,
