@@ -63,3 +63,16 @@ class SearchGame(Game):
         cmd_list = ['cmp','set','add','sub','mul','div',
                     'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
         return 100 + cmd_list.index(action)
+    
+    @staticmethod
+    def _index_to_action(index):
+        """
+        Обратное преобразование индекса в действие.
+        Для индексов 0-99 возвращает число (1-100),
+        для остальных — строковую команду.
+        """
+        if index < 100:
+            return index + 1
+        cmds = ['cmp','set','add','sub','mul','div',
+                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        return cmds[index - 100]
