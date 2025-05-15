@@ -14,7 +14,6 @@ from utils import dotdict
 
 from searchgame.searchgamelogic import SearchGameLogic
 
-
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
 

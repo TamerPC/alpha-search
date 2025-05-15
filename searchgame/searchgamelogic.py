@@ -76,11 +76,13 @@ class SearchGameLogic:
             self.cur = action - 1
         else:
             # команды с двумя аргументами, например ('add', var_idx, value)
-            cmd = action
+            cmd = action[0]
             # предполагаем, что action уже разобран на нужные части заранее
             # здесь приведён упрощённый пример:
             # если cmd == 'set': self.vars[var_idx] = value
-            pass
+            if cmd == 'set':
+                _, var_idx, value = action
+                self.vars[var_idx] = value
 
         # пересчёт доступных ходов
         self.recompute_allowed()
@@ -120,20 +122,20 @@ class SearchGameLogic:
         """
         obs = []
         # массив и target
-        obs.extend(self.array)
+        obs+=self.array
         obs.append(self.target)
         # cur и vars
         obs.append(self.cur)
-        obs.extend(self.vars)
+        obs+=self.vars
         # маска действий
-        total_actions = 100 + len(self.cmds)
+        total_actions = self.get_action_size()
         mask = [0]*total_actions
         for a in self.allowed:
             if isinstance(a, int):
                 mask[a-1] = 1
             else:
                 mask[100 + self.cmds.index(a)] = 1
-        obs.extend(mask)
+        obs += mask
         # НОВОЕ: флаги и счётчик
         obs.append(1 if self.done else 0)
         obs.append(1 if self.found else 0)

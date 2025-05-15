@@ -57,16 +57,12 @@ class SearchGame(Game):
 
     def getValidMoves(self, board, player):
         logic = SearchGameLogic.from_obs(board)
-        mask = logic.allowed
-        # конвертируем mask в вектор 0/1
-        vec = [0] * self.getActionSize()
-        for a in mask:
-            idx = self._action_to_index(a)
-            vec[idx] = 1
+        vec = [0] * self.action_size
+        for a in logic.allowed:
+            vec[self._action_to_index(a)] = 1
         return np.array(vec)
 
     def getGameEnded(self, board, player):
-        from searchgame.searchgamelogic import SearchGameLogic
         logic = SearchGameLogic.from_obs(board)
         # возвращаем +1 если нашли, -1 если закончили без нахождения, 0 иначе
         if logic.done:
@@ -86,14 +82,11 @@ class SearchGame(Game):
     def _action_to_index(action):
         if isinstance(action, int):
             return action - 1
-        cmds = ['cmp','set','add','sub','mul','div',
-                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
-        return 100 + cmds.index(action)
+        return 100 + SearchGameLogic.cmds.index(action)
 
     @staticmethod
     def _index_to_action(index):
         if index < 100:
             return index + 1
-        cmds = ['cmp','set','add','sub','mul','div',
-                'ifless','ifless_close','ifbigger','ifbigger_close','mov','end']
+        cmds = SearchGameLogic.cmds
         return cmds[index - 100]
