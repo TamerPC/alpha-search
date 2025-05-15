@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
 
 args = dotdict({
-    'size': 20,
+    'size': 30,
     'sorted': False,
     'numIters': 100,
     'numEps': 20,

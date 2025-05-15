@@ -7,9 +7,28 @@ from searchgame.searchgamelogic import SearchGameLogic
 
 class SearchGame(Game):
     def __init__(self, args):
-        self.args = args
+        # args.size — длина вашего массива (например, 30)
         self.size = args.size
-        self.obs_dim = 1 + self.size + 1 + 5 + self.getActionSize()
+        # всего действий = 100 числовых + len(cmds)
+        self.action_size = SearchGameLogic.get_action_size()
+
+        # obs состоит из:
+        #   size элементов массива
+        # + 1 target
+        # + 1 cur
+        # + 5 vars
+        # + action_size маски допустимых ходов
+        # + 1 done_flag
+        # + 1 found_flag
+        # + 1 cmp_count
+        self.obs_dim = (
+            self.size  # array
+            + 1        # target
+            + 1        # cur
+            + 5        # vars
+            + self.action_size  # mask
+            + 3        # done, found, cmp_count
+        )
 
     def getInitBoard(self):
         arr = np.random.randint(1, 101, size=self.size)
@@ -19,6 +38,7 @@ class SearchGame(Game):
         return SearchGameLogic(arr, tgt).get_obs()
 
     def getBoardSize(self):
+        # neural net wrapper будет использовать board_x = obs_dim
         return (self.obs_dim,)
 
     def getActionSize(self):
