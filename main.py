@@ -6,7 +6,7 @@ import logging
 import coloredlogs
 
 from Coach import Coach
-from searchgame import SearchGame as Game
+from searchgame.searchgame import SearchGame as Game
 from utils import dotdict
 
 log = logging.getLogger(__name__)
