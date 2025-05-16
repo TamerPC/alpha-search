@@ -2,10 +2,14 @@ import numpy as np
 
 class SearchGameLogic:
     # Объявляем список всех строковых команд один раз в классе
+    # cmds = [
+    #     'cmp', 'set', 'add', 'sub', 'mul', 'div',
+    #     'ifless', 'ifless_close', 'ifbigger', 'ifbigger_close',
+    #     'mov', 'end'
+    # ]
+
     cmds = [
-        'cmp', 'set', 'add', 'sub', 'mul', 'div',
-        'ifless', 'ifless_close', 'ifbigger', 'ifbigger_close',
-        'mov', 'end'
+        'cmp', 'set', 'end'
     ]
 
     def __init__(self, array, target, cur=None, vars=None, allowed=None, done=False, found=False, cmp_count=0):
